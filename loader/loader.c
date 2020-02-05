@@ -240,9 +240,7 @@ void *loader_device_heap_realloc(const struct loader_device *device, void *pMemo
 // Environment variables
 #if defined(__linux__) || defined(__APPLE__)
 
-static inline bool IsHighIntegrity() {
-    return geteuid() != getuid() || getegid() != getgid();
-}
+static inline bool IsHighIntegrity() { return geteuid() != getuid() || getegid() != getgid(); }
 
 static inline char *loader_getenv(const char *name, const struct loader_instance *inst) {
     // No allocation of memory necessary for Linux, but we should at least touch
@@ -297,7 +295,7 @@ static inline bool IsHighIntegrity() {
         uint8_t mandatory_label_buffer[SECURITY_MAX_SID_SIZE + sizeof(DWORD)];
         DWORD buffer_size;
         if (GetTokenInformation(process_token, TokenIntegrityLevel, mandatory_label_buffer, sizeof(mandatory_label_buffer),
-            &buffer_size) != 0) {
+                                &buffer_size) != 0) {
             const TOKEN_MANDATORY_LABEL *mandatory_label = (const TOKEN_MANDATORY_LABEL *)mandatory_label_buffer;
             const DWORD sub_authority_count = *GetSidSubAuthorityCount(mandatory_label->Label.Sid);
             const DWORD integrity_level = *GetSidSubAuthority(mandatory_label->Label.Sid, sub_authority_count - 1);
@@ -601,27 +599,21 @@ bool loaderGetDeviceRegistryEntry(const struct loader_instance *inst, char **reg
     CONFIGRET status = CM_Open_DevNode_Key(dev_id, KEY_QUERY_VALUE, 0, RegDisposition_OpenExisting, &hkrKey, CM_REGISTRY_SOFTWARE);
     if (status != CR_SUCCESS) {
         loader_log(inst, VK_DEBUG_REPORT_WARNING_BIT_EXT, 0,
-            "loaderGetDeviceRegistryEntry: Failed to open registry key for DeviceID(%d)", dev_id);
+                   "loaderGetDeviceRegistryEntry: Failed to open registry key for DeviceID(%d)", dev_id);
         *result = VK_ERROR_INITIALIZATION_FAILED;
         return false;
     }
 
     // query value
-    LSTATUS ret = RegQueryValueEx(
-        hkrKey,
-        value_name,
-        NULL,
-        NULL,
-        NULL,
-        &requiredSize);
+    LSTATUS ret = RegQueryValueEx(hkrKey, value_name, NULL, NULL, NULL, &requiredSize);
 
     if (ret != ERROR_SUCCESS) {
         if (ret == ERROR_FILE_NOT_FOUND) {
             loader_log(inst, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0,
-                "loaderGetDeviceRegistryEntry: Device ID(%d) Does not contain a value for \"%s\"", dev_id, value_name);
+                       "loaderGetDeviceRegistryEntry: Device ID(%d) Does not contain a value for \"%s\"", dev_id, value_name);
         } else {
             loader_log(inst, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0,
-                "loaderGetDeviceRegistryEntry: DeviceID(%d) Failed to obtain %s size", dev_id, value_name);
+                       "loaderGetDeviceRegistryEntry: DeviceID(%d) Failed to obtain %s size", dev_id, value_name);
         }
         goto out;
     }
@@ -634,18 +626,11 @@ bool loaderGetDeviceRegistryEntry(const struct loader_instance *inst, char **reg
         goto out;
     }
 
-    ret = RegQueryValueEx(
-        hkrKey,
-        value_name,
-        NULL,
-        &data_type,
-        (BYTE *)manifest_path,
-        &requiredSize
-    );
+    ret = RegQueryValueEx(hkrKey, value_name, NULL, &data_type, (BYTE *)manifest_path, &requiredSize);
 
     if (ret != ERROR_SUCCESS) {
-        loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-            "loaderGetDeviceRegistryEntry: DeviceID(%d) Failed to obtain %s", value_name);
+        loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0, "loaderGetDeviceRegistryEntry: DeviceID(%d) Failed to obtain %s",
+                   value_name);
 
         *result = VK_ERROR_INITIALIZATION_FAILED;
         goto out;
@@ -653,7 +638,7 @@ bool loaderGetDeviceRegistryEntry(const struct loader_instance *inst, char **reg
 
     if (data_type != REG_SZ && data_type != REG_MULTI_SZ) {
         loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-            "loaderGetDeviceRegistryEntry: Invalid %s data type. Expected REG_SZ or REG_MULTI_SZ.", value_name);
+                   "loaderGetDeviceRegistryEntry: Invalid %s data type. Expected REG_SZ or REG_MULTI_SZ.", value_name);
         *result = VK_ERROR_INITIALIZATION_FAILED;
         goto out;
     }
@@ -727,10 +712,9 @@ VkResult loaderGetDeviceRegistryFiles(const struct loader_instance *inst, char *
             ULONG ulStatus, ulProblem;
             status = CM_Get_DevNode_Status(&ulStatus, &ulProblem, devID, 0);
 
-            if (CR_SUCCESS != status)
-            {
-                loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0, "loaderGetDeviceRegistryFiles: failed to probe device status %ls",
-                           deviceName);
+            if (CR_SUCCESS != status) {
+                loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
+                           "loaderGetDeviceRegistryFiles: failed to probe device status %ls", deviceName);
                 continue;
             }
             if ((ulStatus & DN_HAS_PROBLEM) && (ulProblem == CM_PROB_NEED_RESTART || ulProblem == DN_NEED_RESTART)) {
@@ -739,13 +723,13 @@ VkResult loaderGetDeviceRegistryFiles(const struct loader_instance *inst, char *
                 continue;
             }
 
-            loader_log(inst, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0, "loaderGetDeviceRegistryFiles: opening device %ls", deviceName);
+            loader_log(inst, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0, "loaderGetDeviceRegistryFiles: opening device %ls",
+                       deviceName);
 
             if (loaderGetDeviceRegistryEntry(inst, reg_data, reg_data_size, devID, value_name, &result)) {
                 found = true;
                 continue;
-            }
-            else if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+            } else if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
                 break;
             }
 
@@ -945,7 +929,8 @@ VkResult loaderGetRegistryFiles(const struct loader_instance *inst, char *locati
                                     break;
                                 } else if (hres != S_OK) {
                                     loader_log(inst, VK_DEBUG_REPORT_WARNING_BIT_EXT, 0,
-                                               "Failed to enumerate DXGI adapters at index %d. As a result, drivers may be skipped", j);
+                                               "Failed to enumerate DXGI adapters at index %d. As a result, drivers may be skipped",
+                                               j);
                                     continue;
                                 }
 
@@ -954,7 +939,8 @@ VkResult loaderGetRegistryFiles(const struct loader_instance *inst, char *locati
                                 if (hres != S_OK) {
                                     loader_log(
                                         inst, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0,
-                                        "Failed to get DXGI adapter information at index %d. As a result, drivers may be skipped", j);
+                                        "Failed to get DXGI adapter information at index %d. As a result, drivers may be skipped",
+                                        j);
                                     continue;
                                 }
 
@@ -2436,7 +2422,8 @@ void loader_initialize(void) {
 
     // initial cJSON to use alloc callbacks
     cJSON_Hooks alloc_fns = {
-        .malloc_fn = loader_instance_tls_heap_alloc, .free_fn = loader_instance_tls_heap_free,
+        .malloc_fn = loader_instance_tls_heap_alloc,
+        .free_fn = loader_instance_tls_heap_free,
     };
     cJSON_InitHooks(&alloc_fns);
 
@@ -3711,7 +3698,7 @@ static VkResult ReadDataFilesInSearchPaths(const struct loader_instance *inst, e
     char *xdgdatadirs = loader_secure_getenv("XDG_DATA_DIRS", inst);
     char *xdgdatahome = loader_secure_getenv("XDG_DATA_HOME", inst);
     char *home = NULL;
-    char* home_root = NULL;
+    char *home_root = NULL;
 
     if (xdgconfdirs == NULL) {
         xdgconfig_alloc = false;
@@ -4362,7 +4349,7 @@ VkResult loader_icd_scan(const struct loader_instance *inst, struct loader_icd_t
 #if defined(DEFAULT_VK_DRIVERS_PATH)
                     loader_get_fullpath(library_path, DEFAULT_VK_DRIVERS_PATH, sizeof(fullpath), fullpath);
 #else
-                        loader_get_fullpath(library_path, "", sizeof(fullpath), fullpath);
+                    loader_get_fullpath(library_path, "", sizeof(fullpath), fullpath);
 #endif
                 }
 
@@ -5913,8 +5900,7 @@ VkResult loader_create_device_chain(const VkPhysicalDevice pd, const VkDeviceCre
                     fpGDPA = (PFN_vkGetDeviceProcAddr)loader_platform_get_proc_address(lib_handle, "vkGetDeviceProcAddr");
                     layer_prop->functions.get_device_proc_addr = fpGDPA;
                 } else
-                    fpGDPA =
-                        (PFN_vkGetDeviceProcAddr)loader_platform_get_proc_address(lib_handle, layer_prop->functions.str_gdpa);
+                    fpGDPA = (PFN_vkGetDeviceProcAddr)loader_platform_get_proc_address(lib_handle, layer_prop->functions.str_gdpa);
                 if (!fpGDPA) {
                     loader_log(inst, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0, "Failed to find vkGetDeviceProcAddr in layer %s",
                                layer_prop->lib_name);
@@ -6238,15 +6224,16 @@ VKAPI_ATTR VkResult VKAPI_CALL terminator_CreateInstance(const VkInstanceCreateI
         uint32_t icd_version = VK_API_VERSION_1_0;
         VkResult icd_result = VK_SUCCESS;
         if (icd_term->scanned_icd->api_version >= VK_API_VERSION_1_1) {
-            PFN_vkEnumerateInstanceVersion icd_enumerate_instance_version = (PFN_vkEnumerateInstanceVersion)
-                icd_term->scanned_icd->GetInstanceProcAddr(NULL, "vkEnumerateInstanceVersion");
+            PFN_vkEnumerateInstanceVersion icd_enumerate_instance_version =
+                (PFN_vkEnumerateInstanceVersion)icd_term->scanned_icd->GetInstanceProcAddr(NULL, "vkEnumerateInstanceVersion");
             if (icd_enumerate_instance_version != NULL) {
                 icd_result = icd_enumerate_instance_version(&icd_version);
                 if (icd_result != VK_SUCCESS) {
                     icd_version = VK_API_VERSION_1_0;
-                    loader_log(ptr_instance, VK_DEBUG_REPORT_DEBUG_BIT_EXT, 0, "terminator_CreateInstance: ICD \"%s\" "
-                        "vkEnumerateInstanceVersion returned error. The ICD will be treated as a 1.0 ICD",
-                        icd_term->scanned_icd->lib_name);
+                    loader_log(ptr_instance, VK_DEBUG_REPORT_DEBUG_BIT_EXT, 0,
+                               "terminator_CreateInstance: ICD \"%s\" "
+                               "vkEnumerateInstanceVersion returned error. The ICD will be treated as a 1.0 ICD",
+                               icd_term->scanned_icd->lib_name);
                 }
             }
         }
@@ -6254,7 +6241,9 @@ VKAPI_ATTR VkResult VKAPI_CALL terminator_CreateInstance(const VkInstanceCreateI
         // Create an instance, substituting the version to 1.0 if necessary
         VkApplicationInfo icd_app_info;
         uint32_t icd_version_nopatch = VK_MAKE_VERSION(VK_VERSION_MAJOR(icd_version), VK_VERSION_MINOR(icd_version), 0);
-        uint32_t requested_version = pCreateInfo == NULL || pCreateInfo->pApplicationInfo == NULL ? VK_API_VERSION_1_0 : pCreateInfo->pApplicationInfo->apiVersion;
+        uint32_t requested_version = pCreateInfo == NULL || pCreateInfo->pApplicationInfo == NULL
+                                         ? VK_API_VERSION_1_0
+                                         : pCreateInfo->pApplicationInfo->apiVersion;
         if ((requested_version != 0) && (icd_version_nopatch == VK_API_VERSION_1_0)) {
             if (icd_create_info.pApplicationInfo == NULL) {
                 memset(&icd_app_info, 0, sizeof(icd_app_info));
@@ -6264,7 +6253,8 @@ VKAPI_ATTR VkResult VKAPI_CALL terminator_CreateInstance(const VkInstanceCreateI
             icd_app_info.apiVersion = icd_version;
             icd_create_info.pApplicationInfo = &icd_app_info;
         }
-        icd_result = ptr_instance->icd_tramp_list.scanned_list[i].CreateInstance(&icd_create_info, pAllocator, &(icd_term->instance));
+        icd_result =
+            ptr_instance->icd_tramp_list.scanned_list[i].CreateInstance(&icd_create_info, pAllocator, &(icd_term->instance));
         if (VK_ERROR_OUT_OF_HOST_MEMORY == icd_result) {
             // If out of memory, bail immediately.
             res = VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -6451,7 +6441,7 @@ VKAPI_ATTR VkResult VKAPI_CALL terminator_CreateDevice(VkPhysicalDevice physical
     // Before we continue, If KHX_device_group is the list of enabled and viable extensions, then we then need to look for the
     // corresponding VkDeviceGroupDeviceCreateInfo struct in the device list and replace all the physical device values (which
     // are really loader physical device terminator values) with the ICD versions.
-    //if (icd_term->this_instance->enabled_known_extensions.khr_device_group_creation == 1) {
+    // if (icd_term->this_instance->enabled_known_extensions.khr_device_group_creation == 1) {
     {
         VkBaseOutStructure *pNext = (VkBaseOutStructure *)localCreateInfo.pNext;
         VkBaseOutStructure *pPrev = (VkBaseOutStructure *)&localCreateInfo;
@@ -6500,7 +6490,7 @@ VKAPI_ATTR VkResult VKAPI_CALL terminator_CreateDevice(VkPhysicalDevice physical
     // are not recognized by the ICD. If this causes the ICD to fail, then the items would have to be removed here. The current
     // implementation does not remove them because copying the pNext chain would be impossible if the loader does not recognize
     // the any of the struct types, as the loader would not know the size to allocate and copy.
-    //if (icd_term->dispatch.GetPhysicalDeviceFeatures2 == NULL && icd_term->dispatch.GetPhysicalDeviceFeatures2KHR == NULL) {
+    // if (icd_term->dispatch.GetPhysicalDeviceFeatures2 == NULL && icd_term->dispatch.GetPhysicalDeviceFeatures2KHR == NULL) {
     {
         const void *pNext = localCreateInfo.pNext;
         while (pNext != NULL) {
@@ -6508,10 +6498,11 @@ VKAPI_ATTR VkResult VKAPI_CALL terminator_CreateDevice(VkPhysicalDevice physical
                 case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2: {
                     const VkPhysicalDeviceFeatures2KHR *features = pNext;
 
-                    if (icd_term->dispatch.GetPhysicalDeviceFeatures2 == NULL && icd_term->dispatch.GetPhysicalDeviceFeatures2KHR == NULL) {
+                    if (icd_term->dispatch.GetPhysicalDeviceFeatures2 == NULL &&
+                        icd_term->dispatch.GetPhysicalDeviceFeatures2KHR == NULL) {
                         loader_log(icd_term->this_instance, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0,
-                            "vkCreateDevice: Emulating handling of VkPhysicalDeviceFeatures2 in pNext chain for ICD \"%s\"",
-                            icd_term->scanned_icd->lib_name);
+                                   "vkCreateDevice: Emulating handling of VkPhysicalDeviceFeatures2 in pNext chain for ICD \"%s\"",
+                                   icd_term->scanned_icd->lib_name);
 
                         // Verify that VK_KHR_get_physical_device_properties2 is enabled
                         if (icd_term->this_instance->enabled_known_extensions.khr_get_physical_device_properties2) {
@@ -6528,7 +6519,8 @@ VKAPI_ATTR VkResult VKAPI_CALL terminator_CreateDevice(VkPhysicalDevice physical
                 case VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO: {
                     const VkDeviceGroupDeviceCreateInfoKHR *group_info = pNext;
 
-                    if (icd_term->dispatch.EnumeratePhysicalDeviceGroups == NULL && icd_term->dispatch.EnumeratePhysicalDeviceGroupsKHR == NULL) {
+                    if (icd_term->dispatch.EnumeratePhysicalDeviceGroups == NULL &&
+                        icd_term->dispatch.EnumeratePhysicalDeviceGroupsKHR == NULL) {
                         loader_log(
                             icd_term->this_instance, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0,
                             "vkCreateDevice: Emulating handling of VkPhysicalDeviceGroupProperties in pNext chain for ICD \"%s\"",
@@ -6537,7 +6529,7 @@ VKAPI_ATTR VkResult VKAPI_CALL terminator_CreateDevice(VkPhysicalDevice physical
                         // The group must contain only this one device, since physical device groups aren't actually supported
                         if (group_info->physicalDeviceCount != 1) {
                             loader_log(icd_term->this_instance, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-                                   "vkCreateDevice: Emulation failed to create device from device group info");
+                                       "vkCreateDevice: Emulation failed to create device from device group info");
                             res = VK_ERROR_INITIALIZATION_FAILED;
                             goto out;
                         }
@@ -7199,8 +7191,8 @@ VkStringErrorFlags vk_string_validate(const int max_length, const char *utf8) {
     return result;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL
-terminator_EnumerateInstanceVersion(const VkEnumerateInstanceVersionChain *chain, uint32_t* pApiVersion) {
+VKAPI_ATTR VkResult VKAPI_CALL terminator_EnumerateInstanceVersion(const VkEnumerateInstanceVersionChain *chain,
+                                                                   uint32_t *pApiVersion) {
     // NOTE: The Vulkan WG doesn't want us checking pApiVersion for NULL, but instead
     // prefers us crashing.
     *pApiVersion = VK_MAKE_VERSION(loader_major_version, loader_minor_version, VK_HEADER_VERSION);
@@ -7368,8 +7360,8 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
 
     if (0 == inst->phys_dev_count_term) {
         loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-            "setupLoaderTermPhysDevGroups:  Loader failed to setup physical "
-            "device terminator info before calling \'EnumeratePhysicalDeviceGroups\'.");
+                   "setupLoaderTermPhysDevGroups:  Loader failed to setup physical "
+                   "device terminator info before calling \'EnumeratePhysicalDeviceGroups\'.");
         assert(false);
         res = VK_ERROR_INITIALIZATION_FAILED;
         goto out;
@@ -7392,9 +7384,9 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
             res = icd_term->dispatch.EnumeratePhysicalDevices(icd_term->instance, &cur_icd_group_count, NULL);
             if (res != VK_SUCCESS) {
                 loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-                    "setupLoaderTermPhysDevGroups:  Failed during dispatch call of "
-                    "\'EnumeratePhysicalDevices\' to ICD %d to get plain phys dev count.",
-                    icd_idx);
+                           "setupLoaderTermPhysDevGroups:  Failed during dispatch call of "
+                           "\'EnumeratePhysicalDevices\' to ICD %d to get plain phys dev count.",
+                           icd_idx);
                 goto out;
             }
         } else {
@@ -7402,9 +7394,9 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
             res = fpEnumeratePhysicalDeviceGroups(icd_term->instance, &cur_icd_group_count, NULL);
             if (res != VK_SUCCESS) {
                 loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-                    "setupLoaderTermPhysDevGroups:  Failed during dispatch call of "
-                    "\'EnumeratePhysicalDeviceGroups\' to ICD %d to get count.",
-                    icd_idx);
+                           "setupLoaderTermPhysDevGroups:  Failed during dispatch call of "
+                           "\'EnumeratePhysicalDeviceGroups\' to ICD %d to get count.",
+                           icd_idx);
                 goto out;
             }
         }
@@ -7417,9 +7409,9 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
         inst, total_count * sizeof(VkPhysicalDeviceGroupProperties *), VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE);
     if (NULL == new_phys_dev_groups) {
         loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-            "setupLoaderTermPhysDevGroups:  Failed to allocate new physical device"
-            " group array of size %d",
-            total_count);
+                   "setupLoaderTermPhysDevGroups:  Failed to allocate new physical device"
+                   " group array of size %d",
+                   total_count);
         res = VK_ERROR_OUT_OF_HOST_MEMORY;
         goto out;
     }
@@ -7430,9 +7422,9 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
     local_phys_dev_groups = loader_stack_alloc(sizeof(VkPhysicalDeviceGroupProperties) * total_count);
     if (NULL == local_phys_dev_groups) {
         loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-            "setupLoaderTermPhysDevGroups:  Failed to allocate local "
-            "physical device group array of size %d",
-            total_count);
+                   "setupLoaderTermPhysDevGroups:  Failed to allocate local "
+                   "physical device group array of size %d",
+                   total_count);
         res = VK_ERROR_OUT_OF_HOST_MEMORY;
         goto out;
     }
@@ -7457,12 +7449,12 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
         }
 
         if (NULL == fpEnumeratePhysicalDeviceGroups) {
-            VkPhysicalDevice* phys_dev_array = loader_stack_alloc(sizeof(VkPhysicalDevice) * count_this_time);
+            VkPhysicalDevice *phys_dev_array = loader_stack_alloc(sizeof(VkPhysicalDevice) * count_this_time);
             if (NULL == phys_dev_array) {
                 loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-                    "setupLoaderTermPhysDevGroups:  Failed to allocate local "
-                    "physical device array of size %d",
-                    count_this_time);
+                           "setupLoaderTermPhysDevGroups:  Failed to allocate local "
+                           "physical device array of size %d",
+                           count_this_time);
                 res = VK_ERROR_OUT_OF_HOST_MEMORY;
                 goto out;
             }
@@ -7470,9 +7462,9 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
             res = icd_term->dispatch.EnumeratePhysicalDevices(icd_term->instance, &count_this_time, phys_dev_array);
             if (res != VK_SUCCESS) {
                 loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-                    "setupLoaderTermPhysDevGroups:  Failed during dispatch call of "
-                    "\'EnumeratePhysicalDevices\' to ICD %d to get plain phys dev count.",
-                    icd_idx);
+                           "setupLoaderTermPhysDevGroups:  Failed during dispatch call of "
+                           "\'EnumeratePhysicalDevices\' to ICD %d to get plain phys dev count.",
+                           icd_idx);
                 goto out;
             }
 
@@ -7483,12 +7475,13 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
             }
 
         } else {
-            res = fpEnumeratePhysicalDeviceGroups(icd_term->instance, &count_this_time, &local_phys_dev_groups[cur_icd_group_count]);
+            res =
+                fpEnumeratePhysicalDeviceGroups(icd_term->instance, &count_this_time, &local_phys_dev_groups[cur_icd_group_count]);
             if (VK_SUCCESS != res) {
                 loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-                    "setupLoaderTermPhysDevGroups:  Failed during dispatch call of "
-                    "\'EnumeratePhysicalDeviceGroups\' to ICD %d to get content.",
-                    icd_idx);
+                           "setupLoaderTermPhysDevGroups:  Failed during dispatch call of "
+                           "\'EnumeratePhysicalDeviceGroups\' to ICD %d to get content.",
+                           icd_idx);
                 goto out;
             }
         }
@@ -7509,9 +7502,10 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
             }
             if (!found) {
                 loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-                    "setupLoaderTermPhysDevGroups:  Failed to find GPU %d in group %d"
-                    " returned by \'EnumeratePhysicalDeviceGroups\' in list returned"
-                    " by \'EnumeratePhysicalDevices\'", group_gpu, group);
+                           "setupLoaderTermPhysDevGroups:  Failed to find GPU %d in group %d"
+                           " returned by \'EnumeratePhysicalDeviceGroups\' in list returned"
+                           " by \'EnumeratePhysicalDevices\'",
+                           group_gpu, group);
                 res = VK_ERROR_INITIALIZATION_FAILED;
                 goto out;
             }
@@ -7527,7 +7521,8 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
                 for (uint32_t old_gpu = 0; old_gpu < inst->phys_dev_groups_term[old_idx]->physicalDeviceCount; old_gpu++) {
                     bool found_gpu = false;
                     for (uint32_t new_gpu = 0; new_gpu < local_phys_dev_groups[new_idx].physicalDeviceCount; new_gpu++) {
-                        if (local_phys_dev_groups[new_idx].physicalDevices[new_gpu] == inst->phys_dev_groups_term[old_idx]->physicalDevices[old_gpu]) {
+                        if (local_phys_dev_groups[new_idx].physicalDevices[new_gpu] ==
+                            inst->phys_dev_groups_term[old_idx]->physicalDevices[old_gpu]) {
                             found_gpu = true;
                             break;
                         }
@@ -7553,15 +7548,14 @@ VkResult setupLoaderTermPhysDevGroups(struct loader_instance *inst) {
                 inst, sizeof(VkPhysicalDeviceGroupPropertiesKHR), VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE);
             if (NULL == new_phys_dev_groups[new_idx]) {
                 loader_log(inst, VK_DEBUG_REPORT_ERROR_BIT_EXT, 0,
-                    "setupLoaderTermPhysDevGroups:  Failed to allocate "
-                    "physical device group Terminator object %d",
-                    new_idx);
+                           "setupLoaderTermPhysDevGroups:  Failed to allocate "
+                           "physical device group Terminator object %d",
+                           new_idx);
                 total_count = new_idx;
                 res = VK_ERROR_OUT_OF_HOST_MEMORY;
                 goto out;
             }
-            memcpy(new_phys_dev_groups[new_idx], &local_phys_dev_groups[new_idx],
-                sizeof(VkPhysicalDeviceGroupPropertiesKHR));
+            memcpy(new_phys_dev_groups[new_idx], &local_phys_dev_groups[new_idx], sizeof(VkPhysicalDeviceGroupPropertiesKHR));
         }
     }
 
@@ -7603,8 +7597,7 @@ out:
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL terminator_EnumeratePhysicalDeviceGroups(
-    VkInstance instance, uint32_t *pPhysicalDeviceGroupCount,
-    VkPhysicalDeviceGroupProperties *pPhysicalDeviceGroupProperties) {
+    VkInstance instance, uint32_t *pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupProperties *pPhysicalDeviceGroupProperties) {
     struct loader_instance *inst = (struct loader_instance *)instance;
     VkResult res = VK_SUCCESS;
 
@@ -7623,8 +7616,7 @@ VKAPI_ATTR VkResult VKAPI_CALL terminator_EnumeratePhysicalDeviceGroups(
         }
 
         for (uint32_t i = 0; i < copy_count; i++) {
-            memcpy(&pPhysicalDeviceGroupProperties[i], inst->phys_dev_groups_term[i],
-                   sizeof(VkPhysicalDeviceGroupPropertiesKHR));
+            memcpy(&pPhysicalDeviceGroupProperties[i], inst->phys_dev_groups_term[i], sizeof(VkPhysicalDeviceGroupPropertiesKHR));
         }
     }
 
@@ -7636,7 +7628,7 @@ out:
 }
 
 VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceFeatures2(VkPhysicalDevice physicalDevice,
-                                                                    VkPhysicalDeviceFeatures2 *pFeatures) {
+                                                                 VkPhysicalDeviceFeatures2 *pFeatures) {
     struct loader_physical_device_term *phys_dev_term = (struct loader_physical_device_term *)physicalDevice;
     struct loader_icd_term *icd_term = phys_dev_term->this_icd_term;
     const struct loader_instance *inst = icd_term->this_instance;
@@ -7689,7 +7681,7 @@ VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceFeatures2(VkPhysicalDevic
 }
 
 VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceProperties2(VkPhysicalDevice physicalDevice,
-                                                                      VkPhysicalDeviceProperties2 *pProperties) {
+                                                                   VkPhysicalDeviceProperties2 *pProperties) {
     struct loader_physical_device_term *phys_dev_term = (struct loader_physical_device_term *)physicalDevice;
     struct loader_icd_term *icd_term = phys_dev_term->this_icd_term;
     const struct loader_instance *inst = icd_term->this_instance;
@@ -7749,7 +7741,7 @@ VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceProperties2(VkPhysicalDev
 }
 
 VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceFormatProperties2(VkPhysicalDevice physicalDevice, VkFormat format,
-                                                                            VkFormatProperties2 *pFormatProperties) {
+                                                                         VkFormatProperties2 *pFormatProperties) {
     struct loader_physical_device_term *phys_dev_term = (struct loader_physical_device_term *)physicalDevice;
     struct loader_icd_term *icd_term = phys_dev_term->this_icd_term;
     const struct loader_instance *inst = icd_term->this_instance;
@@ -7767,10 +7759,9 @@ VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceFormatProperties2(VkPhysi
         fpGetPhysicalDeviceFormatProperties2(phys_dev_term->phys_dev, format, pFormatProperties);
     } else {
         // Emulate the call
-        loader_log(
-            icd_term->this_instance, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0,
-            "vkGetPhysicalDeviceFormatProperties2: Emulating call in ICD \"%s\" using vkGetPhysicalDeviceFormatProperties",
-            icd_term->scanned_icd->lib_name);
+        loader_log(icd_term->this_instance, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0,
+                   "vkGetPhysicalDeviceFormatProperties2: Emulating call in ICD \"%s\" using vkGetPhysicalDeviceFormatProperties",
+                   icd_term->scanned_icd->lib_name);
 
         // Write to the VkFormatProperties2 struct
         icd_term->dispatch.GetPhysicalDeviceFormatProperties(phys_dev_term->phys_dev, format, &pFormatProperties->formatProperties);
@@ -7820,8 +7811,9 @@ VKAPI_ATTR VkResult VKAPI_CALL terminator_GetPhysicalDeviceImageFormatProperties
     }
 }
 
-VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceQueueFamilyProperties2(
-    VkPhysicalDevice physicalDevice, uint32_t *pQueueFamilyPropertyCount, VkQueueFamilyProperties2KHR *pQueueFamilyProperties) {
+VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceQueueFamilyProperties2(VkPhysicalDevice physicalDevice,
+                                                                              uint32_t *pQueueFamilyPropertyCount,
+                                                                              VkQueueFamilyProperties2KHR *pQueueFamilyProperties) {
     struct loader_physical_device_term *phys_dev_term = (struct loader_physical_device_term *)physicalDevice;
     struct loader_icd_term *icd_term = phys_dev_term->this_icd_term;
     const struct loader_instance *inst = icd_term->this_instance;
@@ -7875,8 +7867,8 @@ VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceQueueFamilyProperties2(
     }
 }
 
-VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceMemoryProperties2(
-    VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2 *pMemoryProperties) {
+VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceMemoryProperties2(VkPhysicalDevice physicalDevice,
+                                                                         VkPhysicalDeviceMemoryProperties2 *pMemoryProperties) {
     struct loader_physical_device_term *phys_dev_term = (struct loader_physical_device_term *)physicalDevice;
     struct loader_icd_term *icd_term = phys_dev_term->this_icd_term;
     const struct loader_instance *inst = icd_term->this_instance;
@@ -7894,10 +7886,9 @@ VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceMemoryProperties2(
         fpGetPhysicalDeviceMemoryProperties2(phys_dev_term->phys_dev, pMemoryProperties);
     } else {
         // Emulate the call
-        loader_log(
-            icd_term->this_instance, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0,
-            "vkGetPhysicalDeviceMemoryProperties2: Emulating call in ICD \"%s\" using vkGetPhysicalDeviceMemoryProperties",
-            icd_term->scanned_icd->lib_name);
+        loader_log(icd_term->this_instance, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0,
+                   "vkGetPhysicalDeviceMemoryProperties2: Emulating call in ICD \"%s\" using vkGetPhysicalDeviceMemoryProperties",
+                   icd_term->scanned_icd->lib_name);
 
         // Write to the VkPhysicalDeviceMemoryProperties2 struct
         icd_term->dispatch.GetPhysicalDeviceMemoryProperties(phys_dev_term->phys_dev, &pMemoryProperties->memoryProperties);
@@ -7925,7 +7916,8 @@ VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceSparseImageFormatProperti
         fpGetPhysicalDeviceSparseImageFormatProperties2 = icd_term->dispatch.GetPhysicalDeviceSparseImageFormatProperties2;
     }
 
-    if (fpGetPhysicalDeviceSparseImageFormatProperties2 != NULL || !inst->enabled_known_extensions.khr_get_physical_device_properties2) {
+    if (fpGetPhysicalDeviceSparseImageFormatProperties2 != NULL ||
+        !inst->enabled_known_extensions.khr_get_physical_device_properties2) {
         // Pass the call to the driver
         fpGetPhysicalDeviceSparseImageFormatProperties2(phys_dev_term->phys_dev, pFormatInfo, pPropertyCount, pProperties);
     } else {
@@ -8031,14 +8023,15 @@ VKAPI_ATTR void VKAPI_CALL terminator_GetPhysicalDeviceExternalSemaphoreProperti
         fpGetPhysicalDeviceExternalSemaphoreProperties = icd_term->dispatch.GetPhysicalDeviceExternalSemaphoreProperties;
     }
 
-    if (fpGetPhysicalDeviceExternalSemaphoreProperties != NULL || !inst->enabled_known_extensions.khr_external_semaphore_capabilities) {
+    if (fpGetPhysicalDeviceExternalSemaphoreProperties != NULL ||
+        !inst->enabled_known_extensions.khr_external_semaphore_capabilities) {
         // Pass the call to the driver
-        fpGetPhysicalDeviceExternalSemaphoreProperties(phys_dev_term->phys_dev, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
+        fpGetPhysicalDeviceExternalSemaphoreProperties(phys_dev_term->phys_dev, pExternalSemaphoreInfo,
+                                                       pExternalSemaphoreProperties);
     } else {
         // Emulate the call
         loader_log(icd_term->this_instance, VK_DEBUG_REPORT_INFORMATION_BIT_EXT, 0,
-                   "vkGetPhysicalDeviceExternalSemaphoreProperties: Emulating call in ICD \"%s\"",
-                   icd_term->scanned_icd->lib_name);
+                   "vkGetPhysicalDeviceExternalSemaphoreProperties: Emulating call in ICD \"%s\"", icd_term->scanned_icd->lib_name);
 
         if (pExternalSemaphoreInfo->pNext != NULL) {
             loader_log(icd_term->this_instance, VK_DEBUG_REPORT_WARNING_BIT_EXT, 0,
